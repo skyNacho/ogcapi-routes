@@ -132,14 +132,6 @@ image::UML/rem-route.png[alt=UML diagram,width=100%]
 ** definition: Length of the route in meters.
 ** multiplicity: 1
 ** value: `Measure`
-* attribute `maxHeight`
-** definition: A known height restriction on the route in meters.
-** multiplicity: 0..1
-** value: `Measure`
-* attribute `maxWeight`
-** definition: A known weight restriction on the route in metric tons (tonnes).
-** multiplicity: 0..1
-** value: `Measure`
 * attribute `obstacles`
 ** definition: Describes how obstacles were taken into account in the route calculation.
 ** multiplicity: 0..1
@@ -158,10 +150,6 @@ image::UML/rem-route.png[alt=UML diagram,width=100%]
 ==== RouteSegment
 * a subtype of `RouteComponent`
 * a `Feature`
-* attribute `duration`
-** definition: Estimated amount of time required to travel the segment in seconds.
-** multiplicity: 0..1
-** value: `Measure`
 * attribute `instructions`
 ** definition: An instruction for the maneuver at the end of the segment.
 ** multiplicity: 0..1
@@ -174,14 +162,6 @@ image::UML/rem-route.png[alt=UML diagram,width=100%]
 ** definition: The last position of the segment and be on the path geometry of the route overview.
 ** multiplicity: 1
 ** value: `GM_Point`
-* attribute `maxHeight`
-** definition: A known height restriction in meters.
-** multiplicity: 0..1
-** value: `Measure`
-* attribute `maxWeight`
-** definition: A known weight restriction in metric tons (tonnes).
-** multiplicity: 0..1
-** value: `Measure`
 * attribute `roadName`
 ** definition: The road/street name of the segment.
 ** multiplicity: 0..1
