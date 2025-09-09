@@ -12,10 +12,7 @@ This clause specifies the API building blocks for a Web API for Routing based on
 * Additional routing parameters:
 ** **Mode**: Specify the type of transport when computing the route.
 ** **Intermediate waypoints**: Pass through additional points along the route.
-** **Height restrictions**: Consider a specified vehicle height in meters against known height restrictions when computing the route.
-** **Weight restrictions**: Consider a specified vehicle weight in metric tons (tonnes) against known weight restrictions when computing the route.
-** **Obstacles**: Avoid obstacles.
-** **Temporal constraints**: Specify departure/arrival time.
+** **Spatial constraints**: Specify spatial constrains and restrictions, optionally also with a time-based constraint.
 
 The API building blocks support the resources and operations listed in <<tldr>>.
 
@@ -26,15 +23,20 @@ The API building blocks support the resources and operations listed in <<tldr>>.
 |Resource |Path |HTTP method |Request media type |Response media type |Document reference
 |Landing page |`/` |GET |n/a |`application/json` |<<landing_page>>
 |Conformance declaration |`/conformance` |GET |n/a |`application/json` |<<conformance_declaration>>
+|Modes |`/modes` |GET |n/a |`application/json` |<<get_list_of_modes>>
 .2+|Routes .2+|`/routes` |POST |`application/json` |`application/geo+json` |<<compute_route>>
 |GET |n/a |`application/json` |<<get_routes>>
 .2+|Route .2+|`/routes/{routeId}` |GET |n/a |`application/geo+json` |<<get_route>>
 |DELETE |n/a |n/a |<<delete_route>>
 |Route definition |`/routes/{routeId} /definition` |GET |n/a |`application/json` |<<get_route_definition>>
+
+|Actions |`/actions` |GET |n/a |`application/json` |<<get_list_of_actions>>
+|Action |`/actions/{actionId}` |GET |n/a |`application/json` |<<get_action_schema>>
+
 !===
 
-The first three operations are available in the 'Core' requirements class.  All routing
-APIs implementing this Standard will support them. The other four operations are implemented by routing APIs implementing the
+The first four operations are available in the 'Core' requirements class.  All routing
+APIs implementing this Standard will support them. The other six operations are implemented by routing APIs implementing the
 'Manage routes' requirements class.
 
 [[rc_core]]
@@ -128,27 +130,10 @@ Requirements classes can support options and parsing the API definition may be u
     "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core",
     "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode",
     "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/intermediate-waypoints",
-    "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/height",
-    "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/weight",
     "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/obstacles",
     "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/time",
     "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/manage-routes"
-  ],
-  "properties": {
-    "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core": {
-      "preferences": [
-        "fastest",
-        "shortest"
-      ]
-    },
-    "http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode": {
-      "modes": [
-        "motor-vehicle",
-        "bicycle",
-        "pedestrian"
-      ]
-    }
-  }
+  ]
 }
 ----
 =================
@@ -162,6 +147,131 @@ All geometries use coordinates based on the World Geodetic System 1984 (WGS 84) 
 
 Support for additional encodings or additional CRSs may be specified in future extensions.
 
+[[modes]]
+==== Modes
+
+[[fetch_modes]]
+===== Fetch the list of modes
+
+This operation fetches the list of available modes offered by the server. The list of modes should have at least one element.
+
+[[req_core_compute-list-modes]]
+[width="90%",cols="2,6a"]
+|===
+^|*Requirement {counter:req-id}* |*/req/core/list-modes*
+^|A |The server SHALL support the HTTP GET operation at the path `/modes`.
+^|B |The content of that response SHALL be based upon the following OpenAPI 3.0 schema::
+
+[source,YAML]
+----
+type: array
+items:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      description: Name of the mode the server will expect in the request for a route
+    description:
+      type: string
+      minLength: 1
+      description: Human-readable description of the mode, used for informational purposes
+    supported_regions:
+      type: array
+      description: Areas where requests using this mode are supported
+      items:
+        type: object
+        properties:
+          bbox:
+            type: array
+            items:
+              type: number
+            minItems: 4
+            maxItems: 4
+            description: A GeoJSON bounding box represented as [west, south, east, north] in degrees
+          description:
+            type: string
+            description: Optional human-readable description of the area
+        required:
+          - bbox
+    domain:
+      type: array
+      items:
+        type: string
+        enum: ["air", "surface", "subsurface", "ground", "space"]
+      minItems: 1
+      description: The domain(s) in which this mode operates
+  required: ["name", "description", "domain"]
+  additionalProperties: false
+----
+|===
+
+The following are some examples of the list of modes of a routing API that implements this Standard.
+
+[[example_mmodes_multiple_regions]]
+.Modes multiple regions
+=================
+[source,JSON]
+----
+[
+  {
+    "name": "drone",
+    "description": "Routing for unmanned aerial vehicles",
+    "supported_regions": [
+      {
+        "bbox": [-123.5, 37.7, -122.3, 38.1],
+        "description": "San Francisco Bay Area"
+      },
+      {
+        "bbox": [12.4, 41.8, 12.6, 42.0]
+      }
+    ],
+    "domain": ["air"]
+  }
+]
+----
+=================
+
+[[example_modes_mixed_domains]]
+.Modes mixed domains
+=================
+[source,JSON]
+----
+[
+  {
+    "name": "drone",
+    "description": "Routing for unmanned aerial vehicles",
+    "supported_regions": [
+      {
+        "bbox": [-123.5, 37.7, -122.3, 38.1],
+        "description": "San Francisco Bay Area"
+      },
+      {
+        "bbox": [12.4, 41.8, 12.6, 42.0]
+      }
+    ],
+    "domain": ["air"]
+  },
+  {
+    "name": "bike",
+    "description": "Cycling routes in urban and rural areas",
+    "supported_regions": [
+      {
+        "bbox": [2.3, 48.8, 2.5, 49.0],
+        "description": "Paris Metropolitan Area"
+      }
+    ],
+    "domain": ["ground"]
+  },
+  {
+    "name": "metro",
+    "description": "Subway systems within major cities",
+    "domain": ["subsurface"]
+  }
+]
+----
+=================
+
 [[routes]]
 ==== Routes
 
@@ -172,7 +282,7 @@ This operation creates a new route. The payload of the request specifies the def
 
 The core requirements class supports a minimum route definition by using two `waypoints`: The start and end point of the route.
 
-In addition, clients can select a cost function, as the routing `preference`. The API declares the cost functions that it supports in the Conformance Declaration resource and in the API definition.
+In addition, clients can select a routing `mode` among those offered by the server. The API declares the modes that it supports in the `Modes` API resource.
 
 An optional `name` for the route can be provided. The name can be used as the title in links to the route and the name is also included in the route itself.
 
@@ -221,7 +331,7 @@ properties:
                   minItems: 2
                   items:
                     type: number
-      preference:
+      mode:
         type: string
 ----
 |===
@@ -230,42 +340,6 @@ Additional members in the route definition can be ignored.
 
 NOTE: The content model of the route definition object has been designed so that it can also be the content of a process execution request according to the OGC API - Processes - Part 1: Core Standard. The motivation for this is the following: The computation of a route is a process that operates on geospatial data that typically includes a routing dataset, which is a networked dataset that has a set of connected vertices and edges that have topological properties on which analysis can be done. This standard specifies the OGC API building blocks for Routes as API resources. An alternate implementation option for a routing API could be to implement routing as a Process resource using the building blocks specified in the OGC API - Processes - Part 1: Core Standard. The current design allows that the same request can be sent to both API options to compute a new route. 
 The decision to align the payload with OGC API Processes adds additional members "inputs" and "value" that would otherwise be unnecessary. 
-
-[[req_core_conformance-values]]
-[width="90%",cols="2,6a"]
-|===
-^|*Requirement {counter:req-id}* |*/req/core/conformance-values*
-^|A |The content of the conformance declaration response at path `/conformance` SHALL list all values that the `preference` parameter supports, based upon the following OpenAPI 3.0 schema:
-
-[source,YAML]
-----
-type: object
-required:
-  - properties
-properties:
-  properties:
-    type: object
-    required:
-      - http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core
-    properties:
-      http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/core:
-        type: object
-        required:
-          - preferences
-        properties:
-          preferences:
-            type: array
-            items:
-              minItems: 1
-              type: string
-----
-|===
-
-See <<example_cc>> for an example.
-
-NOTE: The plan is to register well-known cost functions with the OGC that are recommended for use, where applicable. Once a register has been established, this Standard will be updated. Until then, use `fastest` for cost functions that optimize duration and `shortest` for cost functions that optimize distance.
-
-The property "preference" in a route definition is a client hint and the server determines how to consider the preference in the computation of the route.  If no preference is specified in the route definition the first value listed in the array is considered the default cost function.
 
 [[req_core_compute-route-success]]
 [width="90%",cols="2,6a"]
@@ -291,7 +365,7 @@ This requirements class only specifies requirements for the synchronous executio
 [width="90%",cols="2,6a"]
 |===
 ^|*Requirement {counter:req-id}* |*/req/core/error*
-^|A |If the request does not conform to the requirements `/req/core/compute-route-op` and `/req/core/conformance-values` (e.g., the route definition is not schema valid, the waypoints coordinates are invalid, or the preference value is invalid) a response with status code `400` SHALL be returned.
+^|A |If the request does not conform to the requirements `/req/core/compute-route-op` and `/req/core/conformance-values` (e.g., the route definition is not schema valid, the waypoints coordinates are invalid, or the mode value is invalid) a response with status code `400` SHALL be returned.
 ^|B |If the request is valid, but the server is not able to process the request (e.g., the server has insufficient route network data for the request), a response with status code `422` SHALL be returned.
 |===
 
@@ -321,7 +395,7 @@ in Washington, D.C.
         ]
       }
     },
-    "preference": "fastest"
+    "mode": "car-fastest"
   }
 }
 ----
@@ -677,9 +751,9 @@ on the route network that is close to the waypoint.
 |===
 
 [[rc_mode]]
-=== Requirements Class "Modes"
+=== Requirements Class "Mode"
 
-Mode is a restriction based on the type of transport desired when computing the route. For instance, "On Road", "Off Road". The API declares the modes that it supports.
+Mode is a restriction based on the route operation or type of transport desired when computing the route. For instance, "drone", "truck-shortest" or "public-fastest". The API declares the modes that it supports.
 
 [cols="1,4",width="90%"]
 |===
@@ -727,46 +801,11 @@ in Washington, D.C.
         ]
       }
     },
-    "preference": "fastest",
-    "mode": "cycling"
+    "mode": "cycling-fastest"
   }
 }
 ----
 =================
-
-[[req_mode_conformance-values]]
-[width="90%",cols="2,6a"]
-|===
-^|*Requirement {counter:req-id}* |*/req/mode/conformance-values*
-^|A |The content of the conformance declaration response at path `/conformance` SHALL list all values that the `mode` parameter supports, based upon the following OpenAPI 3.0 schema:
-
-[source,YAML]
-----
-type: object
-required:
-  - properties
-properties:
-  properties:
-    type: object
-    required:
-      - http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode
-    properties:
-      http://www.opengis.net/spec/ogcapi-routes-1/1.0.0-draft.1/conf/mode:
-        type: object
-        required:
-          - modes
-        properties:
-          modes:
-            type: array
-            items:
-              minItems: 1
-              type: string
-----
-|===
-
-See <<example_cc>> for an example.
-
-NOTE: The plan is to register well-known modes with the OGC Naming Authority that are recommended for use, where applicable.
 
 The mode is a client hint and it is the decision of the server how to consider the selected mode in the computation of the route. If no mode is specified in the route definition then the first value listed in the array is considered to be the default mode.
 
