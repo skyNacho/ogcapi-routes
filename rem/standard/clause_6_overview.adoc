@@ -42,8 +42,6 @@ image::UML/rem-route.png[alt=UML diagram,width=100%]
 ** multiplicity: 1
 ** value: `CharacterString`
 
-NOTE: Actions can include a range of activities relevant to the purpose of the journey and context of the route. Examples of actions include, but are not limited to: changing speed, taking a photo, delivering a package, buying tickets, starting a guided tour, having lunch, or pausing for a rest. Actions may require interacting with a physical location (e.g., purchasing an entry ticket at a museum waypoint), performing a digital task (e.g., checking in via an app), or initiating vehicle, equipment, or sensor operations (e.g., activating a camera at a scenic viewpoint, unloading cargo at a delivery point).
-
 ==== Destination
 * a subtype of `Waypoint`
 * a `Feature`
@@ -61,8 +59,6 @@ NOTE: Actions can include a range of activities relevant to the purpose of the j
 * attribute `title`
 ** multiplicity: 1
 ** value: `CharacterString`
-
-NOTE: Modes specify the purpose of the mission (such as survey, delivery, or patrol) or adapt planning for the characteristics and requirements of a particular vehicle type (such as pedestrian, bicycle, or aerial vehicle). The selected mode influences how the planning server generates the plan, including which behaviors, constraints, and priorities to use during route and action generation. For example, in “parking mode” or “highway mode,” the planning algorithms and resource allocations are optimized differently to meet the needs of each mission context. Operators select the appropriate mode based on mission objectives or the type of vehicle, ensuring the plan is safe, efficient, and tailored to the operating scenario. Modes enable the planning system to flexibly support a wide range of autonomous vehicle applications with context-appropriate strategies.
 
 ==== Route
 * an `Object` 
