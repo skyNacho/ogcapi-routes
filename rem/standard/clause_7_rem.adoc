@@ -156,3 +156,13 @@ Typically the name will be provided by the requester of the route.
 ^|B |The point geometry of each segment SHALL be on the line string geometry of the route overview. The geometry represents the last position of the segment.
 ^|C |Each segment SHALL have a property `length_m` (type: `number`) with the length of the segment in meters.
 |===
+
+[[req_rem_waypoints]]
+[width="90%",cols="2,6a"]
+|===
+^|*Requirement {counter:req-id}* |*/req/rem/waypoints*
+^|A |If the route has intermediate waypoints, each intermediate waypoint (property `featureType` is "waypoint") SHALL be a GeoJSON feature with a Point geometry.
+^|B |The point geometry of the feature SHALL be identical to the point geometry of the route segment leading to the waypoint.
+^|C |The waypoint feature SHALL immediately follow the route segment feature leading to the waypoint.
+^|D |If the feature has a property `timestamp`, it SHALL be a `date-time` string value according to link:https://tools.ietf.org/html/rfc3339#section-5.6[RFC 3339, 5.6] in UTC (time zone "Z"). The value indicates the estimated arrival time at the intermediate waypoint.
+|===
